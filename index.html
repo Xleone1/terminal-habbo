@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Second Life Terminal — Hotel Retro</title>
+  <meta name="description" content="Portal del Hotel Retro — Noticias, Comunidad y acceso" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+  <div class="grain"></div>
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <div class="logo">TERMINAL</div>
+      <nav class="nav">
+        <a href="#inicio">INICIO</a>
+        <a href="#noticias">NOTICIAS</a>
+        <a href="#comunidad">COMUNIDAD</a>
+        <a href="#info">INFO</a>
+      </nav>
+      <div class="actions">
+        <button class="btn ghost" id="open-login">Entrar</button>
+        <button class="btn primary" id="open-register">Registrarse</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="inicio" class="hero">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <h1 class="display">ENTRA. NO TODO LO VISIBLE ESTÁ VACÍO.</h1>
+          <p class="lede">Un hotel que sigue existiendo cuando te vas. Eventos, placas y una comunidad que no necesita
+            gustos populares.</p>
+          <form id="register-form" class="register-form" aria-label="Registro rápido">
+            <label>
+              <span class="label-meta">Usuario</span>
+              <input name="username" required placeholder="tuusuario" />
+            </label>
+            <label>
+              <span class="label-meta">Correo</span>
+              <input name="email" type="email" required placeholder="tucorreo@ejemplo.com" />
+            </label>
+            <div class="form-actions">
+              <button class="btn primary" type="submit">Únete ahora</button>
+              <button class="btn ghost" type="button" id="learn-more">Más info</button>
+            </div>
+            <p class="micro">Al registrarte recibes una placa de bienvenida. Nada más ostentoso.</p>
+          </form>
+        </div>
+
+        <aside class="login-box" id="login-box" aria-label="Caja de inicio de sesión">
+          <div class="panel-top">
+            <span class="telemetry">/auth</span>
+            <hr class="horizon" />
+          </div>
+          <form id="login-form" class="login-form">
+            <label>
+              <span class="label-meta">Usuario o correo</span>
+              <input name="login" placeholder="usuario / correo" />
+            </label>
+            <label>
+              <span class="label-meta">Contraseña</span>
+              <input name="password" type="password" placeholder="••••••••" />
+            </label>
+            <div class="login-actions">
+              <label class="checkbox"><input type="checkbox" /> Recordarme</label>
+              <a class="link-muted" href="#">¿Olvidaste?</a>
+            </div>
+            <div class="form-actions">
+              <button class="btn primary" type="submit">Entrar</button>
+              <button class="btn ghost" type="button" id="close-login">Cerrar</button>
+            </div>
+          </form>
+          <div class="panel-bottom">
+            <span class="metadata">último acceso: N/A</span>
+          </div>
+        </aside>
+      </div>
+      <svg class="atmos-horizon" viewBox="0 0 1200 2" preserveAspectRatio="none" aria-hidden>
+        <line x1="0" y1="1" x2="1200" y2="1" stroke="var(--sodium-fog)" stroke-width="0.8" opacity="0.7" />
+      </svg>
+    </section>
+
+    <section id="noticias" class="news">
+      <div class="section-inner">
+        <h2 class="section-title">NOTICIAS</h2>
+        <div class="news-grid">
+          <article class="news-item">
+            <div class="thumb" aria-hidden></div>
+            <div class="news-body">
+              <time class="meta">2026-05-29</time>
+              <h3>Evento: Primavera de Placas</h3>
+              <p class="excerpt">Nuevas placas y minijuegos. El hotel sincronizará recompensas en la madrugada.</p>
+            </div>
+          </article>
+          <article class="news-item">
+            <div class="thumb small" aria-hidden></div>
+            <div class="news-body">
+              <time class="meta">2026-05-20</time>
+              <h3>Mantenimiento programado</h3>
+              <p class="excerpt">Se aplicarán parches y optimizaciones. El servicio puede verse intermitente.</p>
+            </div>
+          </article>
+          <article class="news-item">
+            <div class="thumb" aria-hidden></div>
+            <div class="news-body">
+              <time class="meta">2026-04-10</time>
+              <h3>Campeonato de Arquitectura</h3>
+              <p class="excerpt">Inscripciones abiertas. Construye una sala que importe.</p>
+            </div>
+          </article>
+        </div>
+        <div class="more-link"><a href="#comunidad">Ver todas las noticias →</a></div>
+      </div>
+    </section>
+
+    <section id="comunidad" class="community">
+      <div class="section-inner">
+        <h2 class="section-title">COMUNIDAD</h2>
+        <div class="community-grid">
+          <div class="community-stream">
+            <div class="post">
+              <div class="p-meta"><span class="telemetry">#324</span> <span class="author">Admin</span> <time>hace
+                  2h</time></div>
+              <div class="p-body">Se ha desplegado una nueva placa por asistencia. No te sorprendas si la encuentras en
+                un armario.</div>
+            </div>
+            <div class="post">
+              <div class="p-meta"><span class="telemetry">#317</span> <span class="author">EventBot</span>
+                <time>ayer</time></div>
+              <div class="p-body">Próximo minijuego: sincronización de canales. No traigas expectación.</div>
+            </div>
+          </div>
+          <aside class="community-sidebar">
+            <div class="panel">
+              <h4 class="small">Jugadores conectados</h4>
+              <div class="stat">25</div>
+              <hr class="horizon" />
+              <h4 class="small">IP / puerto</h4>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="info" class="info">
+      <div class="section-inner">
+        <h2 class="section-title">SISTEMA</h2>
+        <p class="muted">Este portal es una terminal de acceso. Operaciones observadas y registros conservados.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>© Hotel Retro — Terminal</div>
+      <div class="links"><a href="#">Soporte</a> <a href="#">Reglas</a></div>
+    </div>
+  </footer>
+
+  <div id="surveillance-cursor" aria-hidden></div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
