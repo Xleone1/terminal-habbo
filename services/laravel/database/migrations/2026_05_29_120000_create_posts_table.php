@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('title')->nullable();
             $table->text('content');
             $table->string('excerpt')->nullable();
+            $table->string('image_url')->nullable();
             $table->string('author');
             $table->timestamp('published_at')->nullable();
             $table->timestamps();

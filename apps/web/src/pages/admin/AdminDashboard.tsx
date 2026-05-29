@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
   const [postExcerpt, setPostExcerpt] = useState('');
+  const [postImageUrl, setPostImageUrl] = useState('');
   const [postAuthor, setPostAuthor] = useState('');
 
   // Inventory form
@@ -119,6 +120,7 @@ export default function AdminDashboard() {
       type: postType,
       content: postContent,
       author: postAuthor || user?.username || 'Admin',
+      image_url: postImageUrl || undefined,
     };
     if (postType === 'news') {
       payload.title = postTitle;
@@ -127,7 +129,7 @@ export default function AdminDashboard() {
     try {
       const result = await createPost(token!, payload);
       setPosts([result.post, ...posts]);
-      setPostTitle(''); setPostContent(''); setPostExcerpt(''); setPostAuthor('');
+      setPostTitle(''); setPostContent(''); setPostExcerpt(''); setPostImageUrl(''); setPostAuthor('');
       setShowPostForm(false);
     } catch (_) {}
   };
@@ -309,6 +311,12 @@ export default function AdminDashboard() {
                   <span className="label-meta">Contenido</span>
                   <textarea value={postContent} onChange={(e) => setPostContent(e.target.value)} placeholder="Escribe el contenido aquí…" style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }} required />
                 </label>
+                {activeTab === 'news' && (
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                    <span className="label-meta">URL de imagen</span>
+                    <input value={postImageUrl} onChange={(e) => setPostImageUrl(e.target.value)} placeholder="https://ejemplo.com/imagen.png" style={inputStyle} />
+                  </label>
+                )}
                 <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
                   <span className="label-meta">Autor</span>
                   <input value={postAuthor} onChange={(e) => setPostAuthor(e.target.value)} placeholder="Autor" style={inputStyle} />

@@ -6,6 +6,7 @@ export interface Post {
   title: string | null;
   content: string;
   excerpt: string | null;
+  image_url: string | null;
   author: string;
   published_at: string;
   created_at: string;
@@ -20,6 +21,7 @@ export interface CreatePostPayload {
   title?: string;
   content: string;
   excerpt?: string;
+  image_url?: string;
   author: string;
 }
 

@@ -189,6 +189,15 @@
 .thumb.small {
   width: 64px;
 }
+.thumb-img {
+  width: 84px;
+  min-height: 64px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  flex-shrink: 0;
+}
 .news-body h3 {
   margin: 0;
   color: var(--frost-bloom);

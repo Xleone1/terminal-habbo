@@ -22,6 +22,7 @@ class AdminPostController extends Controller
             'title' => 'nullable|string|max:255',
             'content' => 'required|string',
             'excerpt' => 'nullable|string|max:500',
+            'image_url' => 'nullable|url|max:2048',
             'author' => 'required|string|max:255',
         ]);
 
@@ -43,6 +44,7 @@ class AdminPostController extends Controller
             'title' => 'nullable|string|max:255',
             'content' => 'string',
             'excerpt' => 'nullable|string|max:500',
+            'image_url' => 'nullable|url|max:2048',
             'author' => 'string|max:255',
         ]);
 

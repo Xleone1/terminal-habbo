@@ -196,7 +196,11 @@ export default function Landing() {
             <div className="news-grid">
               {news.length > 0 ? news.slice(0, 3).map((item) => (
                 <article key={item.id} className="news-item">
-                  <div className="thumb" aria-hidden="true" />
+                  {item.image_url ? (
+                    <div className="thumb-img" style={{ backgroundImage: `url(${item.image_url})` }} aria-hidden="true" />
+                  ) : (
+                    <div className="thumb" aria-hidden="true" />
+                  )}
                   <div className="news-body">
                     <time className="meta">{item.published_at ? new Date(item.published_at).toLocaleDateString('es-ES') : new Date(item.created_at).toLocaleDateString('es-ES')}</time>
                     <h3>{item.title || 'Sin título'}</h3>
