@@ -46,33 +46,42 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'username' => 'required|string',
-            'password' => 'required|string',
-        ], [
-            'username.required' => 'El nombre de usuario es requerido',
-            'password.required' => 'La contraseña es requerida',
-        ]);
+        try {
+            $validated = $request->validate([
+                'username' => 'required|string',
+                'password' => 'required|string',
+            ], [
+                'username.required' => 'El nombre de usuario es requerido',
+                'password.required' => 'La contraseña es requerida',
+            ]);
 
-        $user = User::where('username', $validated['username'])->first();
+            $user = User::where('username', $validated['username'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+            if (!$user || !Hash::check($validated['password'], $user->password)) {
+                return response()->json([
+                    'message' => 'Credenciales inválidas',
+                ], 401);
+            }
+
+            $token = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
+
             return response()->json([
-                'message' => 'Credenciales inválidas',
-            ], 401);
+                'message' => 'Inicio de sesión exitoso',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'role' => $user->role,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'error_trace' => array_slice($e->getTrace(), 0, 5)
+            ], 500);
         }
-
-        $token = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
-
-        return response()->json([
-            'message' => 'Inicio de sesión exitoso',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'role' => $user->role,
-            ],
-        ]);
     }
 
     /**
