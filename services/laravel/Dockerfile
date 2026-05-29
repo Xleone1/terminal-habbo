@@ -1,15 +1,14 @@
 FROM php:8.4-fpm-alpine
 
-# 1. Install system dependencies for PostgreSQL
+# 1. Install system dependencies for PostgreSQL and Intl using Alpine's package manager
 RUN apk update && apk add --no-cache \
     libpq-dev \
-    postgresql-dev
+    postgresql-dev \
+    icu-dev
 
-# 2. Install PHP PostgreSQL extensions
-RUN docker-php-ext-install pdo pdo_pgsql pgsql
-RUN apt-get update && apt-get install -y libicu-dev \
-    && docker-php-ext-configure intl \
-    && docker-php-ext-install intl pdo pdo_pgsql
+# 2. Configure and install the PHP extensions all in one efficient layer
+RUN docker-php-ext-configure intl \
+    && docker-php-ext-install intl pdo pdo_pgsql pgsql
 
 # 3. Set the working directory
 WORKDIR /var/www/html
