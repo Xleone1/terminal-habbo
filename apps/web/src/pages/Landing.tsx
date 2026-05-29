@@ -4,6 +4,7 @@ import './Landing.css';
 import { useAuthStore } from '../store/authStore';
 import { login, register } from '../api/authApi';
 import { getStats, Statistics } from '../api/statsApi';
+import { getPosts, Post } from '../api/postsApi';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -19,17 +20,25 @@ export default function Landing() {
   const [regLoading, setRegLoading] = useState(false);
 
   const [stats, setStats] = useState<Statistics | null>(null);
+  const [news, setNews] = useState<Post[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
 
   useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 8000);
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+    fetchData();
+    const interval = setInterval(fetchData, 8000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchStats = async () => {
+  const fetchData = async () => {
     try {
-      const data = await getStats();
-      setStats(data);
+      const [s, p] = await Promise.all([getStats(), getPosts()]);
+      setStats(s);
+      setNews(p.posts.filter((post) => post.type === 'news'));
+      setCommunityPosts(p.posts.filter((post) => post.type === 'community'));
     } catch (e) { /* silent */ }
   };
 
@@ -45,10 +54,7 @@ export default function Landing() {
       const res = await login(loginUser, loginPass);
       setToken(res.token);
       setUser(res.user);
-      setLoginMsg('Acceso concedido');
-      setTimeout(() => {
-        navigate(res.user.role === 'admin' ? '/admin' : '/dashboard');
-      }, 600);
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setLoginMsg(err.message || 'Credenciales inválidas');
     } finally {
@@ -82,10 +88,9 @@ export default function Landing() {
 
   return (
     <div className="landing-root">
-      {/* Header */}
       <header className="site-header">
         <div className="header-inner">
-          <div className="logo">TERMINAL</div>
+          <div className="logo">Hotel.exe</div>
           <nav className="nav">
             <a href="#inicio">INICIO</a>
             <a href="#noticias">NOTICIAS</a>
@@ -94,10 +99,7 @@ export default function Landing() {
           </nav>
           <div className="actions">
             {isAuthenticated ? (
-              <button
-                className="btn primary"
-                onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
-              >
+              <button className="btn primary" onClick={() => navigate('/dashboard')}>
                 Panel
               </button>
             ) : (
@@ -115,6 +117,24 @@ export default function Landing() {
       </header>
 
       <main>
+        {/* Stats bar — top of page */}
+        <section className="stats-bar">
+          <div className="stats-bar-inner">
+            <div className="stat-chip">
+              <span className="stat-label">Jugadores</span>
+              <span className="stat-value">{stats?.stats?.players_online ?? '--'}</span>
+            </div>
+            <div className="stat-chip">
+              <span className="stat-label">Salas activas</span>
+              <span className="stat-value">{stats?.stats?.active_rooms ?? '--'}</span>
+            </div>
+            <div className="stat-chip">
+              <span className="stat-label">Registrados</span>
+              <span className="stat-value">{stats?.stats?.total_users ?? '--'}</span>
+            </div>
+          </div>
+        </section>
+
         {/* Hero */}
         <section id="inicio" className="hero">
           <div className="hero-inner">
@@ -125,33 +145,21 @@ export default function Landing() {
               <form id="register-form" className="register-form" onSubmit={handleRegister}>
                 <label>
                   <span className="label-meta">Usuario</span>
-                  <input
-                    value={regUser}
-                    onChange={(e) => setRegUser(e.target.value)}
-                    placeholder="tuusuario"
-                  />
+                  <input value={regUser} onChange={(e) => setRegUser(e.target.value)} placeholder="tuusuario" />
                 </label>
                 <label>
                   <span className="label-meta">Contraseña</span>
-                  <input
-                    type="password"
-                    value={regPass}
-                    onChange={(e) => setRegPass(e.target.value)}
-                    placeholder="••••••••"
-                  />
+                  <input type="password" value={regPass} onChange={(e) => setRegPass(e.target.value)} placeholder="••••••••" />
                 </label>
                 {regMsg && <p className={`micro ${regMsg.includes('exitosa') ? 'text-sodium' : ''}`} style={{ color: regMsg.includes('exitosa') ? 'var(--dead-green)' : undefined }}>{regMsg}</p>}
                 <div className="form-actions">
-                  <button className="btn primary" type="submit" disabled={regLoading}>
-                    {regLoading ? 'Sincronizando…' : 'Únete ahora'}
-                  </button>
+                  <button className="btn primary" type="submit" disabled={regLoading}>{regLoading ? 'Sincronizando…' : 'Únete ahora'}</button>
                   <button className="btn ghost" type="button">Más info</button>
                 </div>
                 <p className="micro">Al registrarte recibes una placa de bienvenida. Nada más ostentoso.</p>
               </form>
             </div>
 
-            {/* Login Box */}
             <aside className="login-box" id="login-box">
               <div className="panel-top">
                 <span className="telemetry">/auth</span>
@@ -160,26 +168,15 @@ export default function Landing() {
               <form className="login-form" onSubmit={handleLogin}>
                 <label>
                   <span className="label-meta">Usuario</span>
-                  <input
-                    value={loginUser}
-                    onChange={(e) => setLoginUser(e.target.value)}
-                    placeholder="usuario"
-                  />
+                  <input value={loginUser} onChange={(e) => setLoginUser(e.target.value)} placeholder="usuario" />
                 </label>
                 <label>
                   <span className="label-meta">Contraseña</span>
-                  <input
-                    type="password"
-                    value={loginPass}
-                    onChange={(e) => setLoginPass(e.target.value)}
-                    placeholder="••••••••"
-                  />
+                  <input type="password" value={loginPass} onChange={(e) => setLoginPass(e.target.value)} placeholder="••••••••" />
                 </label>
-                {loginMsg && <p className="micro" style={{ color: loginMsg === 'Acceso concedido' ? 'var(--dead-green)' : undefined }}>{loginMsg}</p>}
+                {loginMsg && <p className="micro">{loginMsg}</p>}
                 <div className="form-actions">
-                  <button className="btn primary" type="submit" disabled={loginLoading}>
-                    {loginLoading ? 'Verificando…' : 'Entrar'}
-                  </button>
+                  <button className="btn primary" type="submit" disabled={loginLoading}>{loginLoading ? 'Verificando…' : 'Entrar'}</button>
                 </div>
               </form>
               <div className="panel-bottom">
@@ -197,32 +194,26 @@ export default function Landing() {
           <div className="section-inner">
             <h2 className="section-title">NOTICIAS</h2>
             <div className="news-grid">
-              <article className="news-item">
-                <div className="thumb" aria-hidden="true" />
-                <div className="news-body">
-                  <time className="meta">2026-05-29</time>
-                  <h3>Evento: Primavera de Placas</h3>
-                  <p className="excerpt">Nuevas placas y minijuegos. El hotel sincronizará recompensas en la madrugada.</p>
-                </div>
-              </article>
-              <article className="news-item">
-                <div className="thumb small" aria-hidden="true" />
-                <div className="news-body">
-                  <time className="meta">2026-05-20</time>
-                  <h3>Mantenimiento programado</h3>
-                  <p className="excerpt">Se aplicarán parches y optimizaciones. El servicio puede verse intermitente.</p>
-                </div>
-              </article>
-              <article className="news-item">
-                <div className="thumb" aria-hidden="true" />
-                <div className="news-body">
-                  <time className="meta">2026-04-10</time>
-                  <h3>Campeonato de Arquitectura</h3>
-                  <p className="excerpt">Inscripciones abiertas. Construye una sala que importe.</p>
-                </div>
-              </article>
+              {news.length > 0 ? news.slice(0, 3).map((item) => (
+                <article key={item.id} className="news-item">
+                  <div className="thumb" aria-hidden="true" />
+                  <div className="news-body">
+                    <time className="meta">{item.published_at ? new Date(item.published_at).toLocaleDateString('es-ES') : new Date(item.created_at).toLocaleDateString('es-ES')}</time>
+                    <h3>{item.title || 'Sin título'}</h3>
+                    <p className="excerpt">{item.excerpt || item.content.substring(0, 80)}</p>
+                  </div>
+                </article>
+              )) : <>
+                <article className="news-item">
+                  <div className="thumb" aria-hidden="true" />
+                  <div className="news-body">
+                    <time className="meta">—</time>
+                    <h3>Sin noticias aún</h3>
+                    <p className="excerpt">No hay noticias publicadas. Vuelve más tarde.</p>
+                  </div>
+                </article>
+              </>}
             </div>
-            <div className="more-link"><a href="#comunidad">Ver todas las noticias →</a></div>
           </div>
         </section>
 
@@ -232,18 +223,21 @@ export default function Landing() {
             <h2 className="section-title">COMUNIDAD</h2>
             <div className="community-grid">
               <div className="community-stream">
-                <div className="post">
-                  <div className="p-meta"><span className="telemetry">#342</span> <span className="author">Admin</span> <time>hace 2h</time></div>
-                  <div className="p-body">Se ha desplegado una nueva placa por asistencia. No te sorprendas si la encuentras en tu inventario.</div>
-                </div>
-                <div className="post">
-                  <div className="p-meta"><span className="telemetry">#317</span> <span className="author">EventBot</span> <time>ayer</time></div>
-                  <div className="p-body">Próximo minijuego: sincronización de canales. No traigas expectación.</div>
-                </div>
-                <div className="post">
-                  <div className="p-meta"><span className="telemetry">#301</span> <span className="author">Hotel</span> <time>hace 3d</time></div>
-                  <div className="p-body">Nuevas salas públicas disponibles. La Recepción Principal ha sido renovada.</div>
-                </div>
+                {communityPosts.length > 0 ? communityPosts.slice(0, 5).map((post, i) => (
+                  <div key={post.id} className="post">
+                    <div className="p-meta">
+                      <span className="telemetry">#{String(post.id).padStart(3, '0')}</span>
+                      <span className="author">{post.author}</span>
+                      <time>{post.published_at ? (() => { const d = new Date(post.published_at); const n = new Date(); const diff = Math.floor((n.getTime() - d.getTime()) / (1000 * 60 * 60)); return diff < 1 ? 'hace minutos' : diff < 24 ? `hace ${diff}h` : `hace ${Math.floor(diff / 24)}d`; })() : '—'}</time>
+                    </div>
+                    <div className="p-body">{post.content}</div>
+                  </div>
+                )) : (
+                  <div className="post">
+                    <div className="p-meta"><span className="telemetry">#001</span> <span className="author">Hotel</span> <time>—</time></div>
+                    <div className="p-body">Bienvenido a la comunidad. Pronto habrá novedades.</div>
+                  </div>
+                )}
               </div>
               <aside className="community-sidebar">
                 <div className="panel">
@@ -256,27 +250,21 @@ export default function Landing() {
                   <h4 className="small">Usuarios registrados</h4>
                   <div className="stat" style={{ fontSize: 18 }}>{stats?.stats?.total_users ?? '--'}</div>
                 </div>
+                {stats?.recent_users && stats.recent_users.length > 0 && (
+                  <div className="panel" style={{ marginTop: 12 }}>
+                    <h4 className="small">Últimos usuarios</h4>
+                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {stats.recent_users.slice(0, 5).map((u) => (
+                        <span key={u.id} style={{
+                          padding: '2px 8px', border: '1px solid rgba(255,255,255,0.04)',
+                          fontSize: 11, color: u.role === 'admin' ? 'var(--sodium-fog)' : 'var(--frost-bloom)',
+                        }}>{u.username}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </aside>
             </div>
-            {/* Top 10 users */}
-            {stats?.recent_users && stats.recent_users.length > 0 && (
-              <div style={{ marginTop: 24 }}>
-                <h4 className="small" style={{ color: 'var(--vapor-grey)', marginBottom: 8 }}>Últimos usuarios conectados</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {stats.recent_users.slice(0, 10).map((u) => (
-                    <span key={u.id} style={{
-                      padding: '4px 10px',
-                      border: '1px solid rgba(255,255,255,0.04)',
-                      fontSize: 12,
-                      color: u.role === 'admin' ? 'var(--sodium-fog)' : 'var(--frost-bloom)',
-                      background: 'rgba(27,31,36,0.3)'
-                    }}>
-                      {u.username}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
@@ -291,7 +279,7 @@ export default function Landing() {
 
       <footer className="site-footer">
         <div className="footer-inner">
-          <div>© Retro — Terminal</div>
+          <div>© Hotel.exe — Terminal</div>
           <div className="links"><a href="#">Soporte</a> <a href="#">Reglas</a></div>
         </div>
       </footer>

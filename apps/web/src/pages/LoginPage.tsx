@@ -36,7 +36,7 @@ export default function LoginPage() {
         const res = await login(username, password);
         setToken(res.token);
         setUser(res.user);
-        setTimeout(() => navigate(res.user.role === 'admin' ? '/admin' : '/dashboard'), 300);
+        setTimeout(() => navigate('/dashboard'), 300);
       } else {
         await register(username, password);
         setMsg('Registro exitoso. Ahora inicia sesión.');

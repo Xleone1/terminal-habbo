@@ -3,7 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminPostController;
 use App\Http\Controllers\StatisticsController;
+use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -11,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/stats', [StatisticsController::class, 'getStats']);
+Route::get('/posts', function () {
+    return response()->json([
+        'posts' => Post::orderBy('created_at', 'desc')->get(),
+    ]);
+});
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -35,4 +42,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/rooms', [AdminController::class, 'createRoom']);
     Route::put('/rooms/{room}', [AdminController::class, 'updateRoom']);
     Route::delete('/rooms/{room}', [AdminController::class, 'deleteRoom']);
+
+    Route::get('/posts', [AdminPostController::class, 'index']);
+    Route::post('/posts', [AdminPostController::class, 'store']);
+    Route::put('/posts/{post}', [AdminPostController::class, 'update']);
+    Route::delete('/posts/{post}', [AdminPostController::class, 'destroy']);
 });
