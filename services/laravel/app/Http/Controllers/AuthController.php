@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
+
+class AuthController extends Controller
+{
+    /**
+     * Register a new user.
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'username' => 'required|string|min:3|max:255|unique:users',
+            'password' => 'required|string|min:6',
+        ], [
+            'username.required' => 'El nombre de usuario es requerido',
+            'username.unique' => 'El nombre de usuario ya está en uso',
+            'username.min' => 'El nombre de usuario debe tener al menos 3 caracteres',
+            'password.required' => 'La contraseña es requerida',
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres',
+        ]);
+
+        $user = User::create([
+            'username' => $validated['username'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'user',
+        ]);
+
+        return response()->json([
+            'message' => 'Usuario registrado exitosamente',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'role' => $user->role,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Login user and return token.
+     */
+    public function login(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ], [
+            'username.required' => 'El nombre de usuario es requerido',
+            'password.required' => 'La contraseña es requerida',
+        ]);
+
+        $user = User::where('username', $validated['username'])->first();
+
+        if (!$user || !Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'message' => 'Credenciales inválidas',
+            ], 401);
+        }
+
+        $token = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
+
+        return response()->json([
+            'message' => 'Inicio de sesión exitoso',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'role' => $user->role,
+            ],
+        ]);
+    }
+
+    /**
+     * Get current authenticated user.
+     */
+    public function me(Request $request): JsonResponse
+    {
+        return response()->json([
+            'user' => [
+                'id' => $request->user()->id,
+                'username' => $request->user()->username,
+                'role' => $request->user()->role,
+            ],
+        ]);
+    }
+
+    /**
+     * Logout user (delete token).
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Sesión cerrada exitosamente',
+        ]);
+    }
+
+    /**
+     * Refresh token.
+     */
+    public function refreshToken(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->tokens()->delete();
+
+        $token = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'role' => $user->role,
+            ],
+        ]);
+    }
+}
