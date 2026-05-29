@@ -3,171 +3,112 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { logout } from '../../api/authApi';
 import {
-  getAdminUsers,
-  getAdminRooms,
-  createRoom,
-  updateRoom,
-  deleteRoom,
-  deleteUser,
-  toggleUserRole,
-  CreateRoomPayload,
+  getAdminUsers, getAdminRooms, createRoom, deleteRoom, deleteUser, toggleUserRole,
 } from '../../api/adminApi';
 import { User } from '../../store/authStore';
 import { Room } from '../../api/userApi';
-import '../../styles/pages.css';
-import './admin.css';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { token, user, logout: logoutStore, isAdmin } = useAuthStore();
   const [users, setUsers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'users' | 'rooms'>('users');
-  const [showRoomForm, setShowRoomForm] = useState(false);
-  const [newRoom, setNewRoom] = useState<CreateRoomPayload>({
-    name: '',
-    description: '',
-    capacity: 50,
-    is_public: true,
-  });
+  const [loading, setLoading] = useState(true);
+
+  const [showForm, setShowForm] = useState(false);
+  const [roomName, setRoomName] = useState('');
+  const [roomDesc, setRoomDesc] = useState('');
+  const [roomCap, setRoomCap] = useState(50);
+  const [roomPublic, setRoomPublic] = useState(true);
 
   useEffect(() => {
-    if (!token || !isAdmin()) {
-      navigate('/');
-      return;
-    }
-
-    fetchAdminData();
+    if (!token || !isAdmin()) { navigate('/'); return; }
+    fetchData();
   }, [token, navigate, isAdmin]);
 
-  const fetchAdminData = async () => {
+  const fetchData = async () => {
     try {
-      setLoading(true);
-      const [usersData, roomsData] = await Promise.all([
-        getAdminUsers(token!),
-        getAdminRooms(token!),
-      ]);
-
-      setUsers(usersData.users);
-      setRooms(roomsData.rooms);
-      setError('');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+      const [u, r] = await Promise.all([getAdminUsers(token!), getAdminRooms(token!)]);
+      setUsers(u.users);
+      setRooms(r.rooms);
+    } catch (_) {}
+    setLoading(false);
   };
 
   const handleLogout = async () => {
-    try {
-      await logout(token!);
-    } catch (err) {
-      // Ignore error
-    } finally {
-      logoutStore();
-      navigate('/');
-    }
-  };
-
-  const handleDeleteUser = async (userId: number) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-      return;
-    }
-
-    try {
-      await deleteUser(token!, userId);
-      setUsers(users.filter((u) => u.id !== userId));
-      alert('Usuario eliminado');
-    } catch (err: any) {
-      alert('Error: ' + err.message);
-    }
+    try { await logout(token!); } catch (_) {}
+    logoutStore();
+    navigate('/');
   };
 
   const handleToggleRole = async (userId: number) => {
     try {
       const result = await toggleUserRole(token!, userId);
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...u, role: result.user.role } : u))
-      );
-    } catch (err: any) {
-      alert('Error: ' + err.message);
-    }
+      setUsers(users.map((u) => (u.id === userId ? { ...u, role: result.user.role } : u)));
+    } catch (_) {}
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    if (!window.confirm('¿Eliminar este usuario?')) return;
+    try {
+      await deleteUser(token!, userId);
+      setUsers(users.filter((u) => u.id !== userId));
+    } catch (_) {}
   };
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRoom.name) {
-      alert('El nombre de la sala es requerido');
-      return;
-    }
-
+    if (!roomName) return;
     try {
-      const result = await createRoom(token!, newRoom);
+      const result = await createRoom(token!, { name: roomName, description: roomDesc, capacity: roomCap, is_public: roomPublic });
       setRooms([...rooms, result.room]);
-      setNewRoom({ name: '', description: '', capacity: 50, is_public: true });
-      setShowRoomForm(false);
-      alert('Sala creada');
-    } catch (err: any) {
-      alert('Error: ' + err.message);
-    }
+      setRoomName(''); setRoomDesc(''); setRoomCap(50); setRoomPublic(true); setShowForm(false);
+    } catch (_) {}
   };
 
   const handleDeleteRoom = async (roomId: number) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar esta sala?')) {
-      return;
-    }
-
+    if (!window.confirm('¿Eliminar esta sala?')) return;
     try {
       await deleteRoom(token!, roomId);
       setRooms(rooms.filter((r) => r.id !== roomId));
-      alert('Sala eliminada');
-    } catch (err: any) {
-      alert('Error: ' + err.message);
-    }
+    } catch (_) {}
   };
 
-  if (loading) {
-    return (
-      <div className="dashboard">
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          Cargando panel administrativo...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--vapor-grey)' }}>Cargando panel…</div>;
 
   return (
-    <div className="dashboard admin-dashboard">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">PANEL ADMINISTRATIVO</h1>
-        <button onClick={handleLogout} className="logout-btn">
-          Cerrar Sesión
-        </button>
-      </div>
+    <div style={{ minHeight: '100vh' }}>
+      <header className="site-header">
+        <div className="header-inner">
+          <div className="logo">TERMINAL</div>
+          <nav className="nav">
+            <span className="telemetry">/admin</span>
+          </nav>
+          <div className="actions">
+            <span className="micro">{user?.username} <span className="badge admin">ADMIN</span></span>
+            <button className="btn ghost" onClick={handleLogout}>Salir</button>
+          </div>
+        </div>
+      </header>
 
-      {error && <div style={{ color: '#fca5a5', marginBottom: '20px' }}>Error: {error}</div>}
+      <div className="section-inner">
+        <h2 className="section-title">PANEL ADMINISTRATIVO</h2>
 
-      <div className="admin-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          Gestionar Usuarios ({users.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'rooms' ? 'active' : ''}`}
-          onClick={() => setActiveTab('rooms')}
-        >
-          Gestionar Salas ({rooms.length})
-        </button>
-      </div>
+        <div className="tab-bar">
+          <button className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+            Usuarios ({users.length})
+          </button>
+          <button className={`tab-btn ${activeTab === 'rooms' ? 'active' : ''}`} onClick={() => setActiveTab('rooms')}>
+            Salas ({rooms.length})
+          </button>
+        </div>
 
-      <div className="dashboard-content">
         {activeTab === 'users' && (
-          <div className="admin-section">
-            <h2 className="section-title">Usuarios</h2>
+          <div>
+            <h4 className="small" style={{ color: 'var(--vapor-grey)', fontFamily: '"IBM Plex Mono",monospace', fontSize: 12, marginBottom: 12, textTransform: 'uppercase' }}>
+              Gestión de usuarios
+            </h4>
             <div className="table-container">
               <table className="admin-table">
                 <thead>
@@ -182,29 +123,13 @@ export default function AdminDashboard() {
                 <tbody>
                   {users.map((u) => (
                     <tr key={u.id}>
-                      <td>{u.id}</td>
-                      <td className="user-name">{u.username}</td>
+                      <td style={{ color: 'var(--vapor-grey)', fontSize: 11 }}>{u.id}</td>
+                      <td style={{ fontWeight: 500 }}>{u.username}</td>
+                      <td><span className={`badge ${u.role}`}>{u.role === 'admin' ? 'Admin' : 'User'}</span></td>
+                      <td className="meta">{u.created_at ? new Date(u.created_at).toLocaleDateString('es-ES') : '—'}</td>
                       <td>
-                        <span className={`role-badge ${u.role}`}>
-                          {u.role === 'admin' ? 'Administrador' : 'Usuario'}
-                        </span>
-                      </td>
-                      <td>{new Date(u.created_at || '').toLocaleDateString('es-ES')}</td>
-                      <td className="actions">
-                        <button
-                          className="action-btn toggle"
-                          onClick={() => handleToggleRole(u.id)}
-                          title="Cambiar rol"
-                        >
-                          👤
-                        </button>
-                        <button
-                          className="action-btn delete"
-                          onClick={() => handleDeleteUser(u.id)}
-                          title="Eliminar"
-                        >
-                          🗑️
-                        </button>
+                        <button className="action-btn" onClick={() => handleToggleRole(u.id)} title="Alternar rol">Rol</button>
+                        <button className="action-btn danger" onClick={() => handleDeleteUser(u.id)} title="Eliminar">Del</button>
                       </td>
                     </tr>
                   ))}
@@ -215,58 +140,45 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === 'rooms' && (
-          <div className="admin-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 className="section-title">Salas</h2>
-              <button
-                className="cta-btn primary"
-                onClick={() => setShowRoomForm(!showRoomForm)}
-              >
-                {showRoomForm ? 'Cancelar' : '+ Nueva Sala'}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h4 className="small" style={{ color: 'var(--vapor-grey)', fontFamily: '"IBM Plex Mono",monospace', fontSize: 12, textTransform: 'uppercase', margin: 0 }}>
+                Gestión de salas
+              </h4>
+              <button className="btn primary" onClick={() => setShowForm(!showForm)}>
+                {showForm ? 'Cancelar' : '+ Nueva sala'}
               </button>
             </div>
 
-            {showRoomForm && (
-              <form onSubmit={handleCreateRoom} className="room-form">
-                <div className="form-group">
-                  <label>Nombre</label>
-                  <input
-                    type="text"
-                    value={newRoom.name}
-                    onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
-                    placeholder="Nombre de la sala"
-                  />
+            {showForm && (
+              <form onSubmit={handleCreateRoom} style={{
+                background: 'rgba(27,31,36,0.3)', border: '1px solid rgba(255,255,255,0.03)',
+                display: 'grid', gap: 10, padding: 14, marginBottom: 16
+              }}>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                  <span className="label-meta">Nombre</span>
+                  <input value={roomName} onChange={(e) => setRoomName(e.target.value)} placeholder="Nombre de la sala"
+                    style={{ background: 'rgba(13,15,17,0.6)', border: '1px solid rgba(255,255,255,0.02)', color: 'var(--frost-bloom)', padding: 8, fontFamily: 'inherit', borderRadius: 2 }} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                  <span className="label-meta">Descripción</span>
+                  <textarea value={roomDesc} onChange={(e) => setRoomDesc(e.target.value)} placeholder="Descripción"
+                    style={{ background: 'rgba(13,15,17,0.6)', border: '1px solid rgba(255,255,255,0.02)', color: 'var(--frost-bloom)', padding: 8, fontFamily: 'inherit', borderRadius: 2, resize: 'vertical', minHeight: 60 }} />
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                    <span className="label-meta">Capacidad</span>
+                    <input type="number" value={roomCap} onChange={(e) => setRoomCap(Number(e.target.value))} min={1}
+                      style={{ background: 'rgba(13,15,17,0.6)', border: '1px solid rgba(255,255,255,0.02)', color: 'var(--frost-bloom)', padding: 8, fontFamily: 'inherit', borderRadius: 2 }} />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, paddingTop: 20 }}>
+                    <input type="checkbox" checked={roomPublic} onChange={(e) => setRoomPublic(e.target.checked)} />
+                    <span className="label-meta">Sala pública</span>
+                  </label>
                 </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea
-                    value={newRoom.description}
-                    onChange={(e) => setNewRoom({ ...newRoom, description: e.target.value })}
-                    placeholder="Descripción opcional"
-                  />
+                <div className="form-actions">
+                  <button className="btn primary" type="submit">Crear sala</button>
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Capacidad</label>
-                    <input
-                      type="number"
-                      value={newRoom.capacity}
-                      onChange={(e) => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) })}
-                      min="1"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={newRoom.is_public}
-                        onChange={(e) => setNewRoom({ ...newRoom, is_public: e.target.checked })}
-                      />
-                      Pública
-                    </label>
-                  </div>
-                </div>
-                <button type="submit" className="submit-btn">Crear Sala</button>
               </form>
             )}
 
@@ -277,8 +189,8 @@ export default function AdminDashboard() {
                     <th>ID</th>
                     <th>Nombre</th>
                     <th>Descripción</th>
-                    <th>Capacidad</th>
-                    <th>Usuarios</th>
+                    <th>Cap</th>
+                    <th>Online</th>
                     <th>Pública</th>
                     <th>Acciones</th>
                   </tr>
@@ -286,20 +198,14 @@ export default function AdminDashboard() {
                 <tbody>
                   {rooms.map((r) => (
                     <tr key={r.id}>
-                      <td>{r.id}</td>
-                      <td className="room-name">{r.name}</td>
-                      <td>{r.description?.substring(0, 30)}...</td>
+                      <td style={{ color: 'var(--vapor-grey)', fontSize: 11 }}>{r.id}</td>
+                      <td style={{ fontWeight: 500, color: 'var(--sodium-fog)' }}>{r.name}</td>
+                      <td className="meta">{r.description?.substring(0, 30) || '—'}</td>
                       <td>{r.capacity}</td>
                       <td>{r.current_users}</td>
                       <td>{r.is_public ? '✓' : '✗'}</td>
-                      <td className="actions">
-                        <button
-                          className="action-btn delete"
-                          onClick={() => handleDeleteRoom(r.id)}
-                          title="Eliminar"
-                        >
-                          🗑️
-                        </button>
+                      <td>
+                        <button className="action-btn danger" onClick={() => handleDeleteRoom(r.id)}>Del</button>
                       </td>
                     </tr>
                   ))}
@@ -309,6 +215,13 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      <footer className="site-footer">
+        <div className="footer-inner">
+          <div>© Retro — Terminal</div>
+          <div className="links"><span>Panel administrativo</span></div>
+        </div>
+      </footer>
     </div>
   );
 }

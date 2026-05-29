@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { getMe } from '../api/authApi'
-import Landing from '../ui/Landing'
+import Landing from './Landing'
 import LoginPage from './LoginPage'
 import UserDashboard from './UserDashboard'
 import AdminDashboard from './admin/AdminDashboard'
@@ -17,10 +17,9 @@ export default function App(){
         .then((data) => {
           setUser(data.user)
         })
-        .catch(() => {
-          // Token might be invalid
-        })
-    }
+        .catch(() => {})
+}
+
   }, [token, setUser])
 
   return (
