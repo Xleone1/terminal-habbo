@@ -7,6 +7,9 @@ RUN apk update && apk add --no-cache \
 
 # 2. Install PHP PostgreSQL extensions
 RUN docker-php-ext-install pdo pdo_pgsql pgsql
+RUN apt-get update && apt-get install -y libicu-dev \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install intl pdo pdo_pgsql
 
 # 3. Set the working directory
 WORKDIR /var/www/html
