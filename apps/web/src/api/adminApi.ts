@@ -58,3 +58,34 @@ export async function updateRoom(
 export async function deleteRoom(token: string, roomId: number): Promise<{ message: string }> {
   return apiCall<{ message: string }>(`/api/admin/rooms/${roomId}`, { method: 'DELETE' }, token);
 }
+
+export interface Item {
+  id: number;
+  name: string;
+  description: string | null;
+  type: string;
+  price: number;
+}
+
+export async function getAdminItems(token: string): Promise<{ items: Item[] }> {
+  return apiCall<{ items: Item[] }>('/api/admin/items', {}, token);
+}
+
+export async function createItem(token: string, payload: { name: string; description?: string; type: string; price: number }): Promise<{ message: string; item: Item }> {
+  return apiCall<{ message: string; item: Item }>(
+    '/api/admin/items',
+    { method: 'POST', body: JSON.stringify(payload) },
+    token
+  );
+}
+
+export async function addInventoryItem(
+  token: string,
+  payload: { user_id: number; item_id: number; quantity: number }
+): Promise<{ message: string }> {
+  return apiCall<{ message: string }>(
+    '/api/admin/inventory/add',
+    { method: 'POST', body: JSON.stringify(payload) },
+    token
+  );
+}

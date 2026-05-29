@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { logout } from '../../api/authApi';
 import {
   getAdminUsers, getAdminRooms, createRoom, deleteRoom, deleteUser, toggleUserRole,
+  getAdminItems, createItem, addInventoryItem, Item,
 } from '../../api/adminApi';
 import {
   getAdminPosts, createPost, deletePost, Post, CreatePostPayload,
@@ -11,7 +12,7 @@ import {
 import { User } from '../../store/authStore';
 import { Room } from '../../api/userApi';
 
-type Tab = 'users' | 'rooms' | 'news' | 'community';
+type Tab = 'users' | 'rooms' | 'news' | 'community' | 'inventory';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('users');
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +38,19 @@ export default function AdminDashboard() {
   const [postExcerpt, setPostExcerpt] = useState('');
   const [postAuthor, setPostAuthor] = useState('');
 
+  // Inventory form
+  const [invUserId, setInvUserId] = useState<number | ''>('');
+  const [invItemId, setInvItemId] = useState<number | ''>('');
+  const [invQty, setInvQty] = useState(1);
+  const [invMsg, setInvMsg] = useState('');
+
+  // Item creation form
+  const [showItemForm, setShowItemForm] = useState(false);
+  const [itemName, setItemName] = useState('');
+  const [itemDesc, setItemDesc] = useState('');
+  const [itemType, setItemType] = useState('');
+  const [itemPrice, setItemPrice] = useState(0);
+
   useEffect(() => {
     if (!token || !isAdmin()) { navigate('/'); return; }
     fetchData();
@@ -43,12 +58,13 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [u, r, p] = await Promise.all([
-        getAdminUsers(token!), getAdminRooms(token!), getAdminPosts(token!),
+      const [u, r, p, i] = await Promise.all([
+        getAdminUsers(token!), getAdminRooms(token!), getAdminPosts(token!), getAdminItems(token!),
       ]);
       setUsers(u.users);
       setRooms(r.rooms);
       setPosts(p.posts);
+      setItems(i.items);
     } catch (_) {}
     setLoading(false);
   };
@@ -124,12 +140,34 @@ export default function AdminDashboard() {
     } catch (_) {}
   };
 
+  // Inventory actions
+  const handleAddInventory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invUserId || !invItemId) { setInvMsg('Selecciona usuario e item'); return; }
+    try {
+      await addInventoryItem(token!, { user_id: Number(invUserId), item_id: Number(invItemId), quantity: invQty });
+      setInvMsg('Item agregado exitosamente');
+      setInvUserId(''); setInvItemId(''); setInvQty(1);
+    } catch (_) { setInvMsg('Error al agregar item'); }
+  };
+
+  const handleCreateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!itemName || !itemType) return;
+    try {
+      const result = await createItem(token!, { name: itemName, description: itemDesc, type: itemType, price: itemPrice });
+      setItems([...items, result.item]);
+      setItemName(''); setItemDesc(''); setItemType(''); setItemPrice(0); setShowItemForm(false);
+    } catch (_) {}
+  };
+
   const filteredPosts = posts.filter((p) => p.type === activeTab);
 
   const inputStyle = {
     background: 'rgba(13,15,17,0.6)', border: '1px solid rgba(255,255,255,0.02)',
     color: 'var(--frost-bloom)', padding: 8, fontFamily: 'inherit', borderRadius: 2, width: '100%' as const,
   };
+  const selectStyle = { ...inputStyle, cursor: 'pointer' };
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--vapor-grey)' }}>Cargando panel…</div>;
 
@@ -157,6 +195,7 @@ export default function AdminDashboard() {
           <button className={`tab-btn ${activeTab === 'rooms' ? 'active' : ''}`} onClick={() => setActiveTab('rooms')}>Salas</button>
           <button className={`tab-btn ${activeTab === 'news' ? 'active' : ''}`} onClick={() => setActiveTab('news')}>Noticias</button>
           <button className={`tab-btn ${activeTab === 'community' ? 'active' : ''}`} onClick={() => setActiveTab('community')}>Comunidad</button>
+          <button className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => { setActiveTab('inventory'); setInvMsg(''); }}>Inventario</button>
         </div>
 
         {/* Users tab */}
@@ -308,6 +347,83 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Inventory tab */}
+        {activeTab === 'inventory' && (
+          <div>
+            <h4 className="small" style={{ color: 'var(--vapor-grey)', fontFamily: '"IBM Plex Mono",monospace', fontSize: 12, marginBottom: 12, textTransform: 'uppercase' }}>Agregar item a usuario</h4>
+            <form onSubmit={handleAddInventory} style={{ background: 'rgba(27,31,36,0.3)', border: '1px solid rgba(255,255,255,0.03)', display: 'grid', gap: 10, padding: 14, marginBottom: 16 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                <span className="label-meta">Usuario</span>
+                <select value={invUserId} onChange={(e) => setInvUserId(e.target.value ? Number(e.target.value) : '')} style={selectStyle}>
+                  <option value="">Seleccionar usuario…</option>
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.username}</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                <span className="label-meta">Item</span>
+                <select value={invItemId} onChange={(e) => setInvItemId(e.target.value ? Number(e.target.value) : '')} style={selectStyle}>
+                  <option value="">Seleccionar item…</option>
+                  {items.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.type})</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                <span className="label-meta">Cantidad</span>
+                <input type="number" value={invQty} onChange={(e) => setInvQty(Math.max(1, Number(e.target.value)))} min={1} style={inputStyle} />
+              </label>
+              {invMsg && <p className="micro" style={{ color: invMsg.includes('exitosa') ? 'var(--dead-green)' : undefined }}>{invMsg}</p>}
+              <div className="form-actions"><button className="btn primary" type="submit">Agregar al inventario</button></div>
+            </form>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 12 }}>
+              <h4 className="small" style={{ color: 'var(--vapor-grey)', fontFamily: '"IBM Plex Mono",monospace', fontSize: 12, textTransform: 'uppercase', margin: 0 }}>Items disponibles</h4>
+              <button className="btn primary" onClick={() => setShowItemForm(!showItemForm)}>{showItemForm ? 'Cancelar' : '+ Nuevo item'}</button>
+            </div>
+
+            {showItemForm && (
+              <form onSubmit={handleCreateItem} style={{ background: 'rgba(27,31,36,0.3)', border: '1px solid rgba(255,255,255,0.03)', display: 'grid', gap: 10, padding: 14, marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                    <span className="label-meta">Nombre</span>
+                    <input value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="Nombre del item" style={inputStyle} />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                    <span className="label-meta">Tipo</span>
+                    <input value={itemType} onChange={(e) => setItemType(e.target.value)} placeholder="ej: mueble, placa, wall" style={inputStyle} />
+                  </label>
+                </div>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                  <span className="label-meta">Descripción</span>
+                  <textarea value={itemDesc} onChange={(e) => setItemDesc(e.target.value)} placeholder="Descripción" style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
+                  <span className="label-meta">Precio</span>
+                  <input type="number" value={itemPrice} onChange={(e) => setItemPrice(Number(e.target.value))} min={0} style={inputStyle} />
+                </label>
+                <div className="form-actions"><button className="btn primary" type="submit">Crear item</button></div>
+              </form>
+            )}
+
+            <div className="table-container">
+              <table className="admin-table">
+                <thead>
+                  <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Descripción</th><th>Precio</th></tr>
+                </thead>
+                <tbody>
+                  {items.map((i) => (
+                    <tr key={i.id}>
+                      <td style={{ color: 'var(--vapor-grey)', fontSize: 11 }}>{i.id}</td>
+                      <td style={{ fontWeight: 500, color: 'var(--sodium-fog)' }}>{i.name}</td>
+                      <td><span className="badge">{i.type}</span></td>
+                      <td className="meta">{i.description?.substring(0, 40) || '—'}</td>
+                      <td>{i.price > 0 ? `${i.price} créditos` : 'Gratis'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

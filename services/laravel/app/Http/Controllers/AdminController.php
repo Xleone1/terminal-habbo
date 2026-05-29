@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Item;
+use App\Models\InventoryItem;
 use App\Models\Room;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -135,5 +137,61 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'Sala eliminada exitosamente',
         ]);
+    }
+
+    /**
+     * List all items (admin only).
+     */
+    public function listItems(): JsonResponse
+    {
+        return response()->json([
+            'items' => Item::orderBy('name')->get(),
+        ]);
+    }
+
+    /**
+     * Add item to a user's inventory (admin only).
+     */
+    public function addInventoryItem(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'item_id' => 'required|exists:items,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $existing = InventoryItem::where('user_id', $validated['user_id'])
+            ->where('item_id', $validated['item_id'])
+            ->first();
+
+        if ($existing) {
+            $existing->increment('quantity', $validated['quantity']);
+        } else {
+            InventoryItem::create($validated);
+        }
+
+        return response()->json([
+            'message' => 'Item agregado al inventario exitosamente',
+        ]);
+    }
+
+    /**
+     * Create a new item (admin only).
+     */
+    public function createItem(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'type' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        $item = Item::create($validated);
+
+        return response()->json([
+            'message' => 'Item creado exitosamente',
+            'item' => $item,
+        ], 201);
     }
 }

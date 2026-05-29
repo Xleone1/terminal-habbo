@@ -43,6 +43,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('/rooms/{room}', [AdminController::class, 'updateRoom']);
     Route::delete('/rooms/{room}', [AdminController::class, 'deleteRoom']);
 
+    Route::get('/items', [AdminController::class, 'listItems']);
+    Route::post('/items', [AdminController::class, 'createItem']);
+    Route::post('/inventory/add', [AdminController::class, 'addInventoryItem']);
+
     Route::get('/posts', [AdminPostController::class, 'index']);
     Route::post('/posts', [AdminPostController::class, 'store']);
     Route::put('/posts/{post}', [AdminPostController::class, 'update']);
