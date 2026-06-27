@@ -55,6 +55,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ../services/laravel:/var/www/html
+      - /tmp:/tmp
     depends_on:
       - postgres
     networks:
