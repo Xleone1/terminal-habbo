@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# TLS certs
+acme.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+.cursor/
+.zed/
+.nova/
+.codex/
+_phpactor.json
+
+# PHP
+.phpunit.result.cache
+.phpunit.cache/
+_homestead.yaml
+_homestead.json
+
+# Laravel (storage exclusions handled by local .gitignore)
+storage/pail
+storage/*.key
+
+# Node
+*.tsbuildinfo
+
+# Misc
+.codegraph/
