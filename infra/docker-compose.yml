@@ -92,6 +92,22 @@ services:
     networks:
       - web
 
+  paopao-static:
+    image: nginx:stable-alpine
+    container_name: paopao-static
+    restart: unless-stopped
+    volumes:
+      - /var/www/paopao:/usr/share/nginx/html:ro   # mounts your index.html + images
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paopao.rule=Host(`paopao.xcleone.me`)"
+      - "traefik.http.routers.paopao.entrypoints=websecure"
+      - "traefik.http.routers.paopao.tls=true"
+      - "traefik.http.routers.paopao.tls.certresolver=le"
+      - "traefik.http.services.paopao.loadbalancer.server.port=80"
+    networks:
+      - web
+
 volumes:
   pgdata:
 
