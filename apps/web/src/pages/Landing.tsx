@@ -105,7 +105,7 @@ export default function Landing() {
                   onClick={async () => {
                     try {
                       const res = await getSSOTicket(token!);
-                      window.location.href = `https://play.xcleone.me/bridge.html?sso=${res.ticket}`;
+                      window.location.href = `https://play.xcleone.me/?sso=${res.ticket}`;
                     } catch (e: any) {
                       alert(e.message || 'Error al obtener ticket SSO');
                     }
