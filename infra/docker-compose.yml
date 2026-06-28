@@ -23,18 +23,20 @@ services:
     networks:
       - web
 
-  postgres:
-    image: postgres:15
+  mariadb:
+    image: mariadb:11
+    container_name: mariadb
     environment:
-      POSTGRES_DB: hotel
-      POSTGRES_USER: hotel_user
-      POSTGRES_PASSWORD: secret
+      MARIADB_DATABASE: habbo
+      MARIADB_USER: hotel_user
+      MARIADB_PASSWORD: secret
+      MARIADB_ROOT_PASSWORD: root
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
     networks:
       - web
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:3306:3306"
 
   node-gateway:
     build: ../services/node-gateway
@@ -57,7 +59,7 @@ services:
       - ../services/laravel:/var/www/html
       - /tmp:/tmp
     depends_on:
-      - postgres
+      - mariadb
     networks:
       - web
 
@@ -110,7 +112,7 @@ services:
       - web
 
 volumes:
-  pgdata:
+  mysqldata:
 
 networks:
   web:
