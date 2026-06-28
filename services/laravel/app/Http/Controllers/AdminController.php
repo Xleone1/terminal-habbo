@@ -8,26 +8,27 @@ use App\Models\Room;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
-    /**
-     * Get all users (admin only).
-     */
     public function listUsers(): JsonResponse
     {
-        $users = User::select('id', 'username', 'role', 'created_at')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $users = User::select('id', 'username', 'rank', 'account_created')
+            ->orderBy('account_created', 'desc')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'role' => $user->role,
+                    'created_at' => $user->account_created,
+                ];
+            });
 
-        return response()->json([
-            'users' => $users,
-        ]);
+        return response()->json(['users' => $users]);
     }
 
-    /**
-     * Delete a user (admin only).
-     */
     public function deleteUser(Request $request, User $user): JsonResponse
     {
         $user->delete();
@@ -37,16 +38,13 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Promote/demote a user's role (admin only).
-     */
     public function toggleUserRole(Request $request, User $user): JsonResponse
     {
-        $newRole = $user->role === 'admin' ? 'user' : 'admin';
-        $user->update(['role' => $newRole]);
+        $newRank = $user->rank >= 7 ? 1 : 7;
+        $user->update(['rank' => $newRank]);
 
         return response()->json([
-            'message' => "Usuario actualizado a rol: {$newRole}",
+            'message' => "Usuario actualizado a rol: " . ($newRank >= 7 ? 'admin' : 'user'),
             'user' => [
                 'id' => $user->id,
                 'username' => $user->username,
@@ -55,31 +53,36 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Get all rooms (admin only).
-     */
     public function listRooms(): JsonResponse
     {
         $rooms = Room::with('owner:id,username')
-            ->select('id', 'name', 'description', 'capacity', 'current_users', 'owner_id', 'is_public', 'created_at')
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->select('id', 'name', 'description', 'users_max', 'users', 'owner_id', 'is_public', 'state')
+            ->get()
+            ->map(function ($room) {
+                return [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'description' => $room->description,
+                    'capacity' => $room->users_max,
+                    'current_users' => $room->users,
+                    'owner_id' => $room->owner_id,
+                    'owner' => $room->owner,
+                    'is_public' => $room->is_public === '1',
+                    'state' => $room->state,
+                ];
+            });
 
-        return response()->json([
-            'rooms' => $rooms,
-        ]);
+        return response()->json(['rooms' => $rooms]);
     }
 
-    /**
-     * Create a new room (admin only).
-     */
     public function createRoom(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:50',
+            'description' => 'nullable|string|max:512',
             'capacity' => 'required|integer|min:1|max:500',
             'is_public' => 'boolean',
+            'owner_id' => 'nullable|integer|exists:users,id',
         ], [
             'name.required' => 'El nombre de la sala es requerido',
             'capacity.required' => 'La capacidad es requerida',
@@ -87,10 +90,11 @@ class AdminController extends Controller
 
         $room = Room::create([
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'capacity' => $validated['capacity'],
-            'is_public' => $validated['is_public'] ?? true,
-            'owner_id' => null,
+            'description' => $validated['description'] ?? '',
+            'users_max' => $validated['capacity'],
+            'is_public' => isset($validated['is_public']) && $validated['is_public'] ? '1' : '0',
+            'owner_id' => $validated['owner_id'] ?? 0,
+            'owner_name' => '',
         ]);
 
         return response()->json([
@@ -99,27 +103,37 @@ class AdminController extends Controller
                 'id' => $room->id,
                 'name' => $room->name,
                 'description' => $room->description,
-                'capacity' => $room->capacity,
-                'current_users' => $room->current_users,
-                'is_public' => $room->is_public,
+                'capacity' => $room->users_max,
+                'current_users' => $room->users,
+                'is_public' => $room->is_public === '1',
             ],
         ], 201);
     }
 
-    /**
-     * Update a room (admin only).
-     */
     public function updateRoom(Request $request, Room $room): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'string|max:255',
-            'description' => 'nullable|string',
+            'name' => 'string|max:50',
+            'description' => 'nullable|string|max:512',
             'capacity' => 'integer|min:1|max:500',
             'current_users' => 'integer|min:0',
             'is_public' => 'boolean',
         ]);
 
-        $room->update($validated);
+        $data = $validated;
+        if (isset($data['capacity'])) {
+            $data['users_max'] = $data['capacity'];
+            unset($data['capacity']);
+        }
+        if (isset($data['current_users'])) {
+            $data['users'] = $data['current_users'];
+            unset($data['current_users']);
+        }
+        if (isset($data['is_public'])) {
+            $data['is_public'] = $data['is_public'] ? '1' : '0';
+        }
+
+        $room->update($data);
 
         return response()->json([
             'message' => 'Sala actualizada exitosamente',
@@ -127,9 +141,6 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Delete a room (admin only).
-     */
     public function deleteRoom(Request $request, Room $room): JsonResponse
     {
         $room->delete();
@@ -139,35 +150,27 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * List all items (admin only).
-     */
     public function listItems(): JsonResponse
     {
         return response()->json([
-            'items' => Item::orderBy('name')->get(),
+            'items' => Item::select('id', 'user_id', 'room_id', 'item_id', 'x', 'y', 'z', 'rot')->get(),
         ]);
     }
 
-    /**
-     * Add item to a user's inventory (admin only).
-     */
     public function addInventoryItem(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'item_id' => 'required|exists:items,id',
+            'item_id' => 'required|integer|min:1',
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $existing = InventoryItem::where('user_id', $validated['user_id'])
-            ->where('item_id', $validated['item_id'])
-            ->first();
-
-        if ($existing) {
-            $existing->increment('quantity', $validated['quantity']);
-        } else {
-            InventoryItem::create($validated);
+        for ($i = 0; $i < $validated['quantity']; $i++) {
+            InventoryItem::create([
+                'user_id' => $validated['user_id'],
+                'item_id' => $validated['item_id'],
+                'quantity' => 1,
+            ]);
         }
 
         return response()->json([
@@ -175,19 +178,26 @@ class AdminController extends Controller
         ]);
     }
 
-    /**
-     * Create a new item (admin only).
-     */
     public function createItem(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
+            'user_id' => 'nullable|integer',
+            'room_id' => 'nullable|integer',
+            'item_id' => 'required|integer',
+            'x' => 'integer',
+            'y' => 'integer',
+            'z' => 'numeric',
+            'rot' => 'integer',
         ]);
 
-        $item = Item::create($validated);
+        $item = Item::create(array_merge([
+            'user_id' => 0,
+            'room_id' => 0,
+            'x' => 0,
+            'y' => 0,
+            'z' => 0.0,
+            'rot' => 0,
+        ], $validated));
 
         return response()->json([
             'message' => 'Item creado exitosamente',

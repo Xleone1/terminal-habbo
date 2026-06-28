@@ -9,13 +9,10 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user.
-     */
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'username' => 'required|string|min:3|max:255|unique:users',
+            'username' => 'required|string|min:3|max:25|unique:users',
             'password' => 'required|string|min:6',
         ], [
             'username.required' => 'El nombre de usuario es requerido',
@@ -28,7 +25,10 @@ class AuthController extends Controller
         $user = User::create([
             'username' => $validated['username'],
             'password' => Hash::make($validated['password']),
-            'role' => 'user',
+            'rank' => 1,
+            'account_created' => now()->timestamp,
+            'ip_register' => $request->ip(),
+            'ip_current' => $request->ip(),
         ]);
 
         return response()->json([
@@ -41,9 +41,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login user and return token.
-     */
     public function login(Request $request): JsonResponse
     {
         try {
@@ -65,6 +62,12 @@ class AuthController extends Controller
 
             $token = $user->createToken('api-token', ['*'], now()->addHours(24))->plainTextToken;
 
+            // Update last login and IP
+            $user->update([
+                'last_login' => now()->timestamp,
+                'ip_current' => $request->ip(),
+            ]);
+
             return response()->json([
                 'message' => 'Inicio de sesión exitoso',
                 'token' => $token,
@@ -84,9 +87,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Get current authenticated user.
-     */
     public function me(Request $request): JsonResponse
     {
         return response()->json([
@@ -98,9 +98,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout user (delete token).
-     */
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
@@ -110,9 +107,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Refresh token.
-     */
     public function refreshToken(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -127,6 +121,15 @@ class AuthController extends Controller
                 'username' => $user->username,
                 'role' => $user->role,
             ],
+        ]);
+    }
+
+    public function ssoTicket(Request $request): JsonResponse
+    {
+        $ticket = $request->user()->generateSsoTicket();
+
+        return response()->json([
+            'ticket' => $ticket,
         ]);
     }
 }

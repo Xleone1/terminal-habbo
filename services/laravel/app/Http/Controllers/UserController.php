@@ -7,9 +7,6 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    /**
-     * Get current user's profile.
-     */
     public function profile(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -19,47 +16,42 @@ class UserController extends Controller
                 'id' => $user->id,
                 'username' => $user->username,
                 'role' => $user->role,
-                'created_at' => $user->created_at,
+                'motto' => $user->motto,
+                'look' => $user->look,
+                'credits' => $user->credits,
+                'pixels' => $user->pixels,
+                'created_at' => $user->account_created,
             ],
         ]);
     }
 
-    /**
-     * Get current user's inventory.
-     */
     public function inventory(Request $request): JsonResponse
     {
         $user = $request->user();
-        $inventory = $user->inventory()
-            ->with('item')
-            ->get()
-            ->map(function ($inventoryItem) {
-                return [
-                    'id' => $inventoryItem->id,
-                    'item' => [
-                        'id' => $inventoryItem->item->id,
-                        'name' => $inventoryItem->item->name,
-                        'description' => $inventoryItem->item->description,
-                        'type' => $inventoryItem->item->type,
-                    ],
-                    'quantity' => $inventoryItem->quantity,
-                ];
-            });
+        $inventory = $user->inventory()->get();
 
         return response()->json([
             'inventory' => $inventory,
         ]);
     }
 
-    /**
-     * Get current user's rooms.
-     */
     public function rooms(Request $request): JsonResponse
     {
         $user = $request->user();
         $rooms = $user->rooms()
-            ->select('id', 'name', 'description', 'capacity', 'current_users', 'is_public', 'created_at')
-            ->get();
+            ->select('id', 'name', 'description', 'users_max', 'users', 'is_public', 'state')
+            ->get()
+            ->map(function ($room) {
+                return [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'description' => $room->description,
+                    'capacity' => $room->users_max,
+                    'current_users' => $room->users,
+                    'is_public' => $room->is_public === '1',
+                    'state' => $room->state,
+                ];
+            });
 
         return response()->json([
             'rooms' => $rooms,

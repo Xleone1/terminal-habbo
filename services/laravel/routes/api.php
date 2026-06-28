@@ -23,6 +23,7 @@ Route::get('/posts', function () {
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/auth/sso-ticket', [AuthController::class, 'ssoTicket'])->middleware('auth:sanctum');
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
     Route::get('/me', [AuthController::class, 'me']);
 
