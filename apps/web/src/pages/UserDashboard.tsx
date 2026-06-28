@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { logout } from '../api/authApi';
+import { logout, getSSOTicket } from '../api/authApi';
 import { getUserProfile, getUserInventory, getUserRooms, InventoryItem, Room } from '../api/userApi';
 import { User } from '../store/authStore';
 import { getPosts, Post } from '../api/postsApi';
@@ -91,7 +91,16 @@ export default function UserDashboard() {
           </div>
           <div style={{ textAlign: 'center' }}>
             <button
-              onClick={() => alert('Hotel.exe — Modo demostración. Conéctate mediante el emulador.')}
+              onClick={async () => {
+                if (!token) return;
+                try {
+                  const res = await getSSOTicket(token);
+                  localStorage.setItem('sso.ticket', res.ticket);
+                  window.location.href = 'https://play.xcleone.me';
+                } catch (e: any) {
+                  alert(e.message || 'Error al obtener ticket SSO');
+                }
+              }}
               style={{
                 background: 'linear-gradient(180deg, rgba(217,143,59,0.15), rgba(217,143,59,0.06))',
                 border: '1px solid rgba(217,143,59,0.2)',
@@ -111,7 +120,7 @@ export default function UserDashboard() {
             >
               Entrar al hotel
             </button>
-            <p className="micro" style={{ marginTop: 6, color: 'var(--vapor-grey)' }}>Modo demostración — Emulador no conectado</p>
+            <p className="micro" style={{ marginTop: 6, color: 'var(--vapor-grey)' }}>Conéctate al servidor del hotel</p>
           </div>
         </section>
 

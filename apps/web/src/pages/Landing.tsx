@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Landing.css';
 import { useAuthStore } from '../store/authStore';
-import { login, register } from '../api/authApi';
+import { login, register, getSSOTicket } from '../api/authApi';
 import { getStats, Statistics } from '../api/statsApi';
 import { getPosts, Post } from '../api/postsApi';
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { setToken, setUser, isAuthenticated, user } = useAuthStore();
+  const { setToken, setUser, isAuthenticated, user, token } = useAuthStore();
   const [loginUser, setLoginUser] = useState('');
   const [loginPass, setLoginPass] = useState('');
   const [loginMsg, setLoginMsg] = useState('');
@@ -99,9 +99,25 @@ export default function Landing() {
           </nav>
           <div className="actions">
             {isAuthenticated ? (
-              <button className="btn primary" onClick={() => navigate('/dashboard')}>
-                Panel
-              </button>
+              <>
+                <button
+                  className="btn primary"
+                  onClick={async () => {
+                    try {
+                      const res = await getSSOTicket(token!);
+                      localStorage.setItem('sso.ticket', res.ticket);
+                      window.location.href = 'https://play.xcleone.me';
+                    } catch (e: any) {
+                      alert(e.message || 'Error al obtener ticket SSO');
+                    }
+                  }}
+                >
+                  Entrar al hotel
+                </button>
+                <button className="btn ghost" onClick={() => navigate('/dashboard')}>
+                  Panel
+                </button>
+              </>
             ) : (
               <>
                 <button className="btn ghost" onClick={() => document.getElementById('login-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>

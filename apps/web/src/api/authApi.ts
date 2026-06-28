@@ -43,3 +43,11 @@ export async function logout(token: string): Promise<{ message: string }> {
 export async function refreshToken(token: string): Promise<LoginResponse> {
   return apiCall<LoginResponse>('/api/refresh-token', { method: 'POST' }, token);
 }
+
+export interface SSOTicketResponse {
+  ticket: string;
+}
+
+export async function getSSOTicket(token: string): Promise<SSOTicketResponse> {
+  return apiCall<SSOTicketResponse>('/api/auth/sso-ticket', { method: 'POST' }, token);
+}
