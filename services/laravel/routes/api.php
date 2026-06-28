@@ -10,9 +10,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
+Route::get('/health', fn () => response()->json(['status' => 'ok']));
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/stats', [StatisticsController::class, 'getStats']);
+Route::post('/auth/sso-token', [AuthController::class, 'ssoToken']);
 Route::get('/posts', function () {
     return response()->json([
         'posts' => Post::orderBy('created_at', 'desc')->get(),

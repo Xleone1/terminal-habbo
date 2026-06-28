@@ -132,4 +132,25 @@ class AuthController extends Controller
             'ticket' => $ticket,
         ]);
     }
+
+    public function ssoToken(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'token' => 'required|string',
+        ]);
+
+        $user = User::where('auth_ticket', $validated['token'])->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Invalid SSO token',
+            ], 401);
+        }
+
+        return response()->json([
+            'username' => $user->username,
+            'ticket' => $validated['token'],
+            'token' => $validated['token'],
+        ]);
+    }
 }
