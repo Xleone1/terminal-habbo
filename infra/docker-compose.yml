@@ -47,7 +47,7 @@ services:
       - "traefik.http.routers.ws.entrypoints=websecure"
       - "traefik.http.routers.ws.tls=true"
       - "traefik.http.routers.ws.tls.certresolver=le"
-      - "traefik.http.services.ws.loadbalancer.server.port=3000" # Maps to your node port
+      - "traefik.http.services.ws.loadbalancer.server.port=3000"
     networks:
       - web
 
@@ -100,7 +100,7 @@ services:
     container_name: paopao-static
     restart: unless-stopped
     volumes:
-      - /var/www/paopao:/usr/share/nginx/html:ro   # mounts your index.html + images
+      - /var/www/paopao:/usr/share/nginx/html:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.paopao.rule=Host(`paopao.xcleone.me`)"
@@ -110,6 +110,42 @@ services:
       - "traefik.http.services.paopao.loadbalancer.server.port=80"
     networks:
       - web
+
+  arcturus:
+    image: eclipse-temurin:21-jre-alpine
+    container_name: arcturus
+    working_dir: /emulator
+    volumes:
+      - ../services/arcturus/config/config.ini:/emulator/config.ini:ro
+      - ../services/arcturus/Emulator/target/Habbo-4.2.45-jar-with-dependencies.jar:/emulator/Habbo.jar:ro
+      - ../services/arcturus/Emulator/Plugins:/emulator/Plugins
+      - ../apps/nitro-react/dist:/nitro:ro
+    depends_on:
+      - mariadb
+    networks:
+      - web
+    command: ["java", "-Dfile.encoding=UTF8", "-Xmx4096m", "-jar", "Habbo.jar", "config.ini"]
+    labels:
+      - "traefik.enable=true"
+    restart: unless-stopped
+
+  nitro:
+    image: nginx:stable-alpine
+    container_name: nitro-client
+    volumes:
+      - ../apps/nitro-react/dist:/usr/share/nginx/html:ro
+      - ./traefik/nginx-nitro.conf:/etc/nginx/conf.d/default.conf:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nitro.rule=Host(`play.xcleone.me`)"
+      - "traefik.http.routers.nitro.entrypoints=websecure"
+      - "traefik.http.routers.nitro.tls=true"
+      - "traefik.http.routers.nitro.tls.certresolver=le"
+      - "traefik.http.services.nitro.loadbalancer.server.port=80"
+    networks:
+      - web
+    depends_on:
+      - arcturus
 
 volumes:
   mysqldata:

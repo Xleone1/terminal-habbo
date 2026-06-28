@@ -47,3 +47,7 @@ storage/*.key
 
 # Misc
 .codegraph/
+apps/nitro-react/dist/gamedata/
+apps/nitro-react/dist/bundled/
+apps/nitro-react/dist/c_images/
+apps/nitro-react/dist/dcr/
