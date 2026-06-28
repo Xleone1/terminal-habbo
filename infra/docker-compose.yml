@@ -126,7 +126,7 @@ services:
       - web
     command: ["java", "-Dfile.encoding=UTF8", "-Xmx4096m", "-jar", "Habbo.jar", "config.ini"]
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=false"
     restart: unless-stopped
 
   nitro:
